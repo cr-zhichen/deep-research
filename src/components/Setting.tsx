@@ -74,17 +74,17 @@ function Setting({ open, onClose }: SettingProps) {
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>{t("setting.title")}</DialogTitle>
-          <DialogDescription>{t("setting.description")}</DialogDescription>
+          {/* <DialogDescription>{t("setting.description")}</DialogDescription> */}
         </DialogHeader>
         <Form {...form}>
           <form className="space-y-4">
-            <Tabs defaultValue="local">
+            <Tabs defaultValue="server">
               <TabsList
                 className={cn("w-full mb-1", {
                   hidden: BUILD_MODE === "export",
                 })}
               >
-                <TabsTrigger className="w-1/2" value="local">
+                <TabsTrigger className="w-1/2" value="local" disabled={true}>
                   {t("setting.local")}
                 </TabsTrigger>
                 <TabsTrigger className="w-1/2" value="server">
@@ -105,6 +105,7 @@ function Setting({ open, onClose }: SettingProps) {
                         <Input
                           type="password"
                           placeholder={t("setting.apiKeyPlaceholder")}
+                          disabled={true}
                           {...field}
                         />
                       </FormControl>
@@ -120,6 +121,7 @@ function Setting({ open, onClose }: SettingProps) {
                       <FormControl>
                         <Input
                           placeholder="https://generativelanguage.googleapis.com"
+                          disabled={true}
                           {...field}
                         />
                       </FormControl>

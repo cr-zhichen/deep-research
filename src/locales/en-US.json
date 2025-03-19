@@ -50,5 +50,8 @@
     "language": "Language",
     "save": "Save",
     "cancel": "Cancel"
+  },
+  "tips": {
+    "authFailed": "Authentication failed, please check if the access password is correct"
   }
 }

@@ -17,6 +17,8 @@ import { useTaskStore } from "@/store/task";
 import { useSettingStore } from "@/store/setting";
 import { toast } from "sonner";
 import { pick, flat, isString, isObject } from "radash";
+import { useGlobalStore } from "@/store/global";
+import i18next from 'i18next';
 
 function getResponseLanguagePrompt(lang: string) {
   return `\n\n**Respond in ${lang}**\n\n`;
@@ -38,13 +40,21 @@ function removeJsonMarkdown(text: string) {
 }
 
 function handleError(err: unknown) {
+  const t = i18next.t.bind(i18next);
   console.error(err);
   if (isString(err)) toast.error(err);
   if (isObject(err)) {
     const { error } = err as { error: APICallError };
     if (error.responseBody) {
       const response = JSON.parse(error.responseBody) as GeminiError;
-      toast.error(`[${response.error.status}]: ${response.error.message}`);
+      if (response.error.status === "FORBIDDEN") {
+        const { setOpenSetting } = useGlobalStore.getState();
+        setOpenSetting(true);
+        toast.error(t("tips.authFailed"));
+      }
+      else {
+        toast.error(`[${response.error.status}]: ${response.error.message}`);
+      }
     } else {
       toast.error(`[${error.name}]: ${error.message}`);
     }
