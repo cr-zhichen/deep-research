@@ -44,7 +44,7 @@ i18next
   )
   .init({
     supportedLngs: keys(locales),
-    fallbackLng: "en-US",
+    fallbackLng: "zh-CN",
   });
 
 export default i18next;

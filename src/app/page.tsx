@@ -25,7 +25,14 @@ function Home() {
         <SearchResult />
         <FinalReport />
       </main>
-      <footer className="my-4 text-center text-sm text-gray-600">
+      <footer className="mt-4 text-center text-sm text-gray-600">
+        <a href="https://github.com/cr-zhichen/" target="_blank">
+          {t("modify", {
+            name: "zgccrui",
+          })}
+        </a>
+      </footer>
+      <footer className="mt-2 mb-4 text-center text-sm text-gray-600">
         <a href="https://github.com/u14app/" target="_blank">
           {t("copyright", {
             name: "U14App",
