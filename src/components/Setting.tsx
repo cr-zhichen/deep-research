@@ -77,6 +77,10 @@ function Setting({ open, onClose }: SettingProps) {
   function handleSubmit(values: z.infer<typeof formSchema>) {
     const { update } = useSettingStore.getState();
     update(values);
+    // 保存后刷新模型列表
+    if (values.apiKey || values.accessPassword) {
+      refresh();
+    }
     onClose();
   }
 

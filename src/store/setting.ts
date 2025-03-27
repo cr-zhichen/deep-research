@@ -18,7 +18,7 @@ export const defaultValues = {
   apiKey: "",
   apiProxy: "",
   accessPassword: "",
-  thinkingModel: "gemini-2.0-flash-thinking-exp",
+  thinkingModel: "gemini-2.5-pro-exp-03-25",
   networkingModel: "gemini-2.0-flash-exp",
   language: "",
 };
