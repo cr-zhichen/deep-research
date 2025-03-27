@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { shuffle } from "radash";
 
 export const runtime = "edge";
 export const preferredRegion = [
@@ -23,6 +24,8 @@ export async function POST(req: NextRequest) {
   const path = searchParams.getAll("slug");
   searchParams.delete("slug");
   const params = searchParams.toString();
+  // Support multi-key polling,
+  const apiKeys = shuffle(GOOGLE_GENERATIVE_AI_API_KEY?.split(",") || []);
 
   try {
     let url = `${API_PROXY_BASE_URL}/${path.join("/")}`;
@@ -33,7 +36,7 @@ export async function POST(req: NextRequest) {
         "Content-Type": req.headers.get("Content-Type") || "application/json",
         "x-goog-api-client":
           req.headers.get("x-goog-api-client") || "genai-js/0.24.0",
-        "x-goog-api-key": GOOGLE_GENERATIVE_AI_API_KEY,
+        "x-goog-api-key": apiKeys[0],
       },
       body: JSON.stringify(body),
     });

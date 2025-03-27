@@ -1,10 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { LoaderCircle } from "lucide-react";
+import { LoaderCircle, SquarePlus } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/Button";
 import {
   Form,
   FormControl,
@@ -13,11 +14,11 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import useDeepResearch from "@/hooks/useDeepResearch";
 import { useGlobalStore } from "@/store/global";
 import { useSettingStore } from "@/store/setting";
 import { useTaskStore } from "@/store/task";
+import { useHistoryStore } from "@/store/history";
 
 const formSchema = z.object({
   topic: z.string().min(2),
@@ -26,20 +27,29 @@ const formSchema = z.object({
 function Topic() {
   const { t } = useTranslation();
   const { askQuestions } = useDeepResearch();
+  const taskStore = useTaskStore();
   const [isThinking, setIsThinking] = useState<boolean>(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      topic: "",
+      topic: taskStore.question,
     },
   });
+
+  useEffect(() => {
+    form.setValue("topic", taskStore.question);
+  }, [taskStore.question, form]);
 
   async function handleSubmit(values: z.infer<typeof formSchema>) {
     const { apiKey, accessPassword } = useSettingStore.getState();
     if (apiKey || accessPassword) {
-      const { setQuestion } = useTaskStore.getState();
+      const { id, setQuestion } = useTaskStore.getState();
       setIsThinking(true);
+      if (id !== "") {
+        createNewResearch();
+        form.setValue("topic", values.topic);
+      }
       setQuestion(values.topic);
       await askQuestions();
       setIsThinking(false);
@@ -49,11 +59,31 @@ function Topic() {
     }
   }
 
+  function createNewResearch() {
+    const { id, backup, reset } = useTaskStore.getState();
+    const { update } = useHistoryStore.getState();
+    if (id) update(id, backup());
+    reset();
+    form.reset();
+  }
+
   return (
-    <section className="p-4 border rounded-md mt-4">
-      <h3 className="font-semibold text-lg border-b mb-2 leading-10">
-        {t("research.topic.title")}
-      </h3>
+    <section className="p-4 border rounded-md mt-4 print:hidden">
+      <div className="flex justify-between items-center border-b mb-2">
+        <h3 className="font-semibold text-lg leading-10">
+          {t("research.topic.title")}
+        </h3>
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => createNewResearch()}
+            title={t("research.common.newResearch")}
+          >
+            <SquarePlus />
+          </Button>
+        </div>
+      </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)}>
           <FormField

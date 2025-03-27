@@ -24,21 +24,23 @@ if (BUILD_MODE === "export") {
 } else if (BUILD_MODE === "standalone") {
   nextConfig.output = "standalone";
 } else {
-  nextConfig.rewrites = async () => {
-    return [
-      {
-        source: "/api/ai/google/v1beta/:path*",
-        has: [
-          {
-            type: "header",
-            key: "x-goog-api-key",
-            value: "(?<key>.*)",
-          },
-        ],
-        destination: `${API_PROXY_BASE_URL}/v1beta/:path*?key=${GOOGLE_GENERATIVE_AI_API_KEY}`,
-      },
-    ];
-  };
+  if (GOOGLE_GENERATIVE_AI_API_KEY?.split(",").length === 1) {
+    nextConfig.rewrites = async () => {
+      return [
+        {
+          source: "/api/ai/google/v1beta/:path*",
+          has: [
+            {
+              type: "header",
+              key: "x-goog-api-key",
+              value: "(?<key>.*)",
+            },
+          ],
+          destination: `${API_PROXY_BASE_URL}/v1beta/:path*?key=${GOOGLE_GENERATIVE_AI_API_KEY}`,
+        },
+      ];
+    };
+  }
 }
 
 export default nextConfig;

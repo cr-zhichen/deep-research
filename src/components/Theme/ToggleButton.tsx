@@ -1,9 +1,11 @@
 "use client";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/Button";
 
 function ToggleButton() {
+  const { t } = useTranslation();
   const { theme, setTheme, systemTheme } = useTheme();
 
   const handleThemeChange = () => {
@@ -20,9 +22,10 @@ function ToggleButton() {
 
   return (
     <Button
+      className="h-8 w-8"
+      title={t("theme")}
       variant="ghost"
       size="icon"
-      className="h-8 w-8"
       onClick={() => handleThemeChange()}
     >
       <Moon className="absolute h-5 w-5 scale-0 transition-all dark:scale-100" />

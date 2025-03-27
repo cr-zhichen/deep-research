@@ -11,10 +11,11 @@ const SearchResult = dynamic(
   () => import("@/components/Research/SearchResult")
 );
 const FinalReport = dynamic(() => import("@/components/Research/FinalReport"));
+const History = dynamic(() => import("@/components/History"));
 
 function Home() {
   const { t } = useTranslation();
-  const { openSetting, setOpenSetting } = useGlobalStore();
+  const globalStore = useGlobalStore();
 
   return (
     <div className="max-w-screen-md mx-auto px-4">
@@ -39,8 +40,15 @@ function Home() {
           })}
         </a>
       </footer>
-      <aside>
-        <Setting open={openSetting} onClose={() => setOpenSetting(false)} />
+      <aside className="print:hidden">
+        <Setting
+          open={globalStore.openSetting}
+          onClose={() => globalStore.setOpenSetting(false)}
+        />
+        <History
+          open={globalStore.openHistory}
+          onClose={() => globalStore.setOpenHistory(false)}
+        />
       </aside>
     </div>
   );

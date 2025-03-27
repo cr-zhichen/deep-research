@@ -1,4 +1,5 @@
 "use client";
+import { useLayoutEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -27,8 +28,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import useModel from "@/hooks/useModel";
 import { useSettingStore } from "@/store/setting";
 import { cn } from "@/utils/style";
+import { omit, capitalize } from "radash";
 
 type SettingProps = {
   open: boolean;
@@ -41,19 +44,28 @@ const formSchema = z.object({
   apiKey: z.string().optional(),
   apiProxy: z.string().optional(),
   accessPassword: z.string().optional(),
+  thinkingModel: z.string(),
+  networkingModel: z.string(),
   language: z.string().optional(),
 });
 
+function convertModelName(name: string) {
+  return name
+    .split("-")
+    .map((word) => capitalize(word))
+    .join(" ");
+}
+
 function Setting({ open, onClose }: SettingProps) {
   const { t } = useTranslation();
+  const { modelList, refresh } = useModel();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: async () => {
       return new Promise((resolve) => {
-        const { apiKey, apiProxy, accessPassword, language } =
-          useSettingStore.getState();
-        resolve({ apiKey, apiProxy, accessPassword, language });
+        const state = useSettingStore.getState();
+        resolve({ ...omit(state, ["update"]) });
       });
     },
   });
@@ -68,9 +80,13 @@ function Setting({ open, onClose }: SettingProps) {
     onClose();
   }
 
+  useLayoutEffect(() => {
+    refresh();
+  }, [refresh]);
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{t("setting.title")}</DialogTitle>
           {/* <DialogDescription>{t("setting.description")}</DialogDescription> */}
@@ -95,12 +111,12 @@ function Setting({ open, onClose }: SettingProps) {
                   control={form.control}
                   name="apiKey"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
+                    <FormItem className="from-item">
+                      <FormLabel className="col-span-1">
                         {t("setting.apiKeyLabel")}
                         <span className="ml-1 text-red-500">*</span>
                       </FormLabel>
-                      <FormControl>
+                      <FormControl className="col-span-3">
                         <Input
                           type="password"
                           placeholder={t("setting.apiKeyPlaceholder")}
@@ -115,9 +131,11 @@ function Setting({ open, onClose }: SettingProps) {
                   control={form.control}
                   name="apiProxy"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("setting.apiProxyLabel")}</FormLabel>
-                      <FormControl>
+                    <FormItem className="from-item">
+                      <FormLabel className="col-span-1">
+                        {t("setting.apiUrlLabel")}
+                      </FormLabel>
+                      <FormControl className="col-span-3">
                         <Input
                           placeholder="https://generativelanguage.googleapis.com"
                           disabled={true}
@@ -133,12 +151,12 @@ function Setting({ open, onClose }: SettingProps) {
                   control={form.control}
                   name="accessPassword"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
+                    <FormItem className="from-item">
+                      <FormLabel className="col-span-1">
                         {t("setting.accessPassword")}
                         <span className="ml-1 text-red-500">*</span>
                       </FormLabel>
-                      <FormControl>
+                      <FormControl className="col-span-3">
                         <Input
                           type="password"
                           placeholder={t("setting.accessPasswordPlaceholder")}
@@ -153,16 +171,72 @@ function Setting({ open, onClose }: SettingProps) {
 
             <FormField
               control={form.control}
-              name="language"
+              name="thinkingModel"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("setting.language")}</FormLabel>
+                <FormItem className="from-item">
+                  <FormLabel className="col-span-1">
+                    {t("setting.thinkingModel")}
+                  </FormLabel>
                   <FormControl>
                     <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
+                      <SelectTrigger className="col-span-3">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-sm:max-h-72">
+                        {modelList.map((name) => {
+                          return (
+                            <SelectItem key={name} value={name}>
+                              {convertModelName(name)}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="networkingModel"
+              render={({ field }) => (
+                <FormItem className="from-item">
+                  <FormLabel className="col-span-1">
+                    {t("setting.networkingModel")}
+                  </FormLabel>
+                  <FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="max-sm:max-h-72">
+                        {modelList.map((name) => {
+                          return (
+                            <SelectItem key={name} value={name}>
+                              {convertModelName(name)}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="language"
+              render={({ field }) => (
+                <FormItem className="from-item">
+                  <FormLabel className="col-span-1">
+                    {t("setting.language")}
+                  </FormLabel>
+                  <FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="max-sm:max-h-48">
                         <SelectItem value="en-US">English</SelectItem>
                         <SelectItem value="zh-CN">简体中文</SelectItem>
                       </SelectContent>
@@ -173,12 +247,8 @@ function Setting({ open, onClose }: SettingProps) {
             />
           </form>
         </Form>
-        <DialogFooter className="mt-2">
-          <Button
-            className="flex-1 max-sm:mt-2"
-            variant="outline"
-            onClick={onClose}
-          >
+        <DialogFooter className="mt-2 flex-row sm:justify-between sm:space-x-0 gap-3">
+          <Button className="flex-1" variant="outline" onClick={onClose}>
             {t("setting.cancel")}
           </Button>
           <Button

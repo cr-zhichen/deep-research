@@ -113,3 +113,15 @@
     @apply bg-background text-foreground;
   }
 }
+
+.float-menu-button {
+  @apply w-8 h-8 hover:bg-transparent text-slate-600 hover:text-slate-950 dark:text-slate-400 dark:hover:text-slate-50;
+}
+
+.hidden-empty-p p:empty {
+  @apply hidden;
+}
+
+.from-item {
+  @apply grid grid-cols-4 gap-4 space-y-0 items-center;
+}

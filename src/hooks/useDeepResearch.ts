@@ -3,8 +3,14 @@ import { streamText, smoothStream, type APICallError } from "ai";
 import { parsePartialJson } from "@ai-sdk/ui-utils";
 import { useTranslation } from "react-i18next";
 import Plimit from "p-limit";
+import { toast } from "sonner";
+import { useModelProvider } from "@/hooks/useAiProvider";
+import { useTaskStore } from "@/store/task";
+import { useHistoryStore } from "@/store/history";
+import { useSettingStore } from "@/store/setting";
 import {
   getSystemPrompt,
+  getOutputGuidelinesPrompt,
   generateQuestionsPrompt,
   generateSerpQueriesPrompt,
   processSearchResultPrompt,
@@ -12,16 +18,11 @@ import {
   writeFinalReportPrompt,
   getSERPQuerySchema,
 } from "@/utils/deep-research";
-import { useGoogleProvider } from "@/hooks/useAiProvider";
-import { useTaskStore } from "@/store/task";
-import { useSettingStore } from "@/store/setting";
-import { toast } from "sonner";
-import { pick, flat, isString, isObject } from "radash";
-import { useGlobalStore } from "@/store/global";
-import i18next from 'i18next';
+import { parseError } from "@/utils/error";
+import { pick, flat } from "radash";
 
 function getResponseLanguagePrompt(lang: string) {
-  return `\n\n**Respond in ${lang}**\n\n`;
+  return `**Respond in ${lang}**`;
 }
 
 function removeJsonMarkdown(text: string) {
@@ -39,43 +40,29 @@ function removeJsonMarkdown(text: string) {
   return text.trim();
 }
 
-function handleError(err: unknown) {
-  const t = i18next.t.bind(i18next);
-  console.error(err);
-  if (isString(err)) toast.error(err);
-  if (isObject(err)) {
-    const { error } = err as { error: APICallError };
-    if (error.responseBody) {
-      const response = JSON.parse(error.responseBody) as GeminiError;
-      if (response.error.status === "FORBIDDEN") {
-        const { setOpenSetting } = useGlobalStore.getState();
-        setOpenSetting(true);
-        toast.error(t("tips.authFailed"));
-      }
-      else {
-        toast.error(`[${response.error.status}]: ${response.error.message}`);
-      }
-    } else {
-      toast.error(`[${error.name}]: ${error.message}`);
-    }
-  }
+function handleError(error: unknown) {
+  const errorMessage = parseError(error);
+  toast.error(errorMessage);
 }
 
 function useDeepResearch() {
   const { t } = useTranslation();
   const taskStore = useTaskStore();
-  const google = useGoogleProvider();
+  const { createProvider } = useModelProvider();
   const [status, setStatus] = useState<string>("");
 
   async function askQuestions() {
-    const { language } = useSettingStore.getState();
+    const { thinkingModel, language } = useSettingStore.getState();
     const { question } = useTaskStore.getState();
     setStatus(t("research.common.thinking"));
+    const provider = createProvider("google");
     const result = streamText({
-      model: google("gemini-2.0-flash-thinking-exp"),
+      model: provider(thinkingModel),
       system: getSystemPrompt(),
-      prompt:
-        generateQuestionsPrompt(question) + getResponseLanguagePrompt(language),
+      prompt: [
+        generateQuestionsPrompt(question),
+        getResponseLanguagePrompt(language),
+      ].join("\n\n"),
       experimental_transform: smoothStream(),
       onError: handleError,
     });
@@ -96,12 +83,14 @@ function useDeepResearch() {
         let content = "";
         const sources: Source[] = [];
         taskStore.updateTask(item.query, { state: "processing" });
+        const provider = createProvider("google");
         const searchResult = streamText({
-          model: google("gemini-2.0-flash-exp", { useSearchGrounding: true }),
+          model: provider("gemini-2.0-flash-exp", { useSearchGrounding: true }),
           system: getSystemPrompt(),
-          prompt:
-            processSearchResultPrompt(item.query, item.researchGoal) +
+          prompt: [
+            processSearchResultPrompt(item.query, item.researchGoal),
             getResponseLanguagePrompt(language),
+          ].join("\n\n"),
           experimental_transform: smoothStream(),
           onError: handleError,
         });
@@ -122,16 +111,18 @@ function useDeepResearch() {
   }
 
   async function reviewSearchResult() {
-    const { language } = useSettingStore.getState();
+    const { thinkingModel, language } = useSettingStore.getState();
     const { query, tasks, suggestion } = useTaskStore.getState();
     setStatus(t("research.common.research"));
     const learnings = tasks.map((item) => item.learning);
+    const provider = createProvider("google");
     const result = streamText({
-      model: google("gemini-2.0-flash-thinking-exp"),
+      model: provider(thinkingModel),
       system: getSystemPrompt(),
-      prompt:
-        reviewSerpQueriesPrompt(query, learnings, suggestion) +
+      prompt: [
+        reviewSerpQueriesPrompt(query, learnings, suggestion),
         getResponseLanguagePrompt(language),
+      ].join("\n\n"),
       experimental_transform: smoothStream(),
       onError: handleError,
     });
@@ -164,16 +155,20 @@ function useDeepResearch() {
   }
 
   async function writeFinalReport() {
-    const { language } = useSettingStore.getState();
-    const { query, tasks, setTitle } = useTaskStore.getState();
+    const { thinkingModel, language } = useSettingStore.getState();
+    const { query, tasks, setId, setTitle, setSources } =
+      useTaskStore.getState();
+    const { save } = useHistoryStore.getState();
     setStatus(t("research.common.writing"));
     const learnings = tasks.map((item) => item.learning);
+    const provider = createProvider("google");
     const result = streamText({
-      model: google("gemini-2.0-flash-thinking-exp"),
-      system: getSystemPrompt(),
-      prompt:
-        writeFinalReportPrompt(query, learnings) +
+      model: provider(thinkingModel),
+      system: [getSystemPrompt(), getOutputGuidelinesPrompt()].join("\n\n"),
+      prompt: [
+        writeFinalReportPrompt(query, learnings),
         getResponseLanguagePrompt(language),
+      ].join("\n\n"),
       experimental_transform: smoothStream(),
       onError: handleError,
     });
@@ -182,38 +177,35 @@ function useDeepResearch() {
       content += textPart;
       taskStore.updateFinalReport(content);
     }
-    const title = content.split("\n\n")[0].replaceAll("#", "").trim();
+    const title = content
+      .split("\n\n")[0]
+      .replaceAll("#", "")
+      .replaceAll("**", "")
+      .trim();
     setTitle(title);
     const sources = flat(
       tasks.map((item) => (item.sources ? item.sources : []))
     );
-    if (sources.length > 0) {
-      content += `\n\n---\n\n## ${t("research.finalReport.researchedInfor", {
-        total: sources.length,
-      })}\n\n${sources
-        .map(
-          (source, idx) =>
-            `${idx + 1}. [${source.title || source.url}](${source.url})`
-        )
-        .join("\n")}`;
-    }
-    taskStore.updateFinalReport(content);
+    setSources(sources);
+    const id = save(taskStore.backup());
+    setId(id);
     return content;
   }
 
   async function deepResearch() {
-    const { language } = useSettingStore.getState();
+    const { thinkingModel, language } = useSettingStore.getState();
     const { query } = useTaskStore.getState();
     setStatus(t("research.common.thinking"));
     try {
       let queries = [];
-
+      const provider = createProvider("google");
       const result = streamText({
-        model: google("gemini-2.0-flash-thinking-exp"),
+        model: provider(thinkingModel),
         system: getSystemPrompt(),
-        prompt:
-          generateSerpQueriesPrompt(query) +
+        prompt: [
+          generateSerpQueriesPrompt(query),
           getResponseLanguagePrompt(language),
+        ].join("\n\n"),
         experimental_transform: smoothStream(),
         onError: handleError,
       });

@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 
-const useAccurateTimer = () => {
+function useAccurateTimer() {
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef<number | null>(null);
@@ -16,9 +16,9 @@ const useAccurateTimer = () => {
   }, [time]);
 
   // Use useCallback to optimize start and stop functions to avoid unnecessary re-rendering
-  const start = () => {
-    if (time > 0) setTime(0);
-    if (!isRunning && !timerRef.current) {
+  function start() {
+    setTime(0);
+    if (!timerRef.current) {
       setIsRunning(true);
       // Record the start time, taking into account the pause situation
       startTimeRef.current = Date.now() - time;
@@ -34,16 +34,16 @@ const useAccurateTimer = () => {
       // Start the animation frame loop
       timerRef.current = requestAnimationFrame(tick);
     }
-  };
+  }
 
-  const stop = () => {
+  function stop() {
     if (isRunning && timerRef.current) {
       setIsRunning(false);
       cancelAnimationFrame(timerRef.current);
       timerRef.current = null;
       setTime(0);
     }
-  };
+  }
 
   useEffect(() => {
     return () => {
@@ -60,6 +60,6 @@ const useAccurateTimer = () => {
     start,
     stop,
   };
-};
+}
 
 export default useAccurateTimer;
