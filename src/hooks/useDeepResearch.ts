@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { streamText, smoothStream, type APICallError } from "ai";
+import { streamText, smoothStream } from "ai";
 import { parsePartialJson } from "@ai-sdk/ui-utils";
 import { useTranslation } from "react-i18next";
 import Plimit from "p-limit";
