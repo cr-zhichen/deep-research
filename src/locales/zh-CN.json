@@ -109,7 +109,8 @@
     "accessPasswordPlaceholder": "请输入服务器访问密码",
     "thinkingModel": "思维模型",
     "networkingModel": "联网模型",
-    "language": "系统语言",
+    "language": "界面语言",
+    "refresh": "点击刷新模型",
     "save": "保存",
     "cancel": "取消"
   },

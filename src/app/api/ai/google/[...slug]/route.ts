@@ -18,7 +18,11 @@ const GOOGLE_GENERATIVE_AI_API_KEY = process.env
 const API_PROXY_BASE_URL =
   process.env.API_PROXY_BASE_URL || "https://generativelanguage.googleapis.com";
 
-export async function GET(req: NextRequest) {
+async function handler(req: NextRequest) {
+  let body;
+  if (req.method.toUpperCase() !== "GET") {
+    body = await req.json();
+  }
   const searchParams = req.nextUrl.searchParams;
   const path = searchParams.getAll("slug");
   searchParams.delete("slug");
@@ -30,13 +34,14 @@ export async function GET(req: NextRequest) {
     let url = `${API_PROXY_BASE_URL}/${path.join("/")}`;
     if (params) url += `?${params}`;
     const response = await fetch(url, {
-      method: "GET",
+      method: req.method,
       headers: {
         "Content-Type": req.headers.get("Content-Type") || "application/json",
         "x-goog-api-client":
           req.headers.get("x-goog-api-client") || "genai-js/0.24.0",
         "x-goog-api-key": apiKeys[0],
       },
+      body: body ? JSON.stringify(body) : undefined,
     });
     return new NextResponse(response.body, response);
   } catch (error) {
@@ -50,36 +55,4 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const searchParams = req.nextUrl.searchParams;
-  const path = searchParams.getAll("slug");
-  searchParams.delete("slug");
-  const params = searchParams.toString();
-  // Support multi-key polling,
-  const apiKeys = shuffle(GOOGLE_GENERATIVE_AI_API_KEY?.split(",") || []);
-
-  try {
-    let url = `${API_PROXY_BASE_URL}/${path.join("/")}`;
-    if (params) url += `?${params}`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": req.headers.get("Content-Type") || "application/json",
-        "x-goog-api-client":
-          req.headers.get("x-goog-api-client") || "genai-js/0.24.0",
-        "x-goog-api-key": apiKeys[0],
-      },
-      body: JSON.stringify(body),
-    });
-    return new NextResponse(response.body, response);
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(error);
-      return NextResponse.json(
-        { code: 500, message: error.message },
-        { status: 500 }
-      );
-    }
-  }
-}
+export { handler as GET, handler as POST, handler as PUT, handler as DELETE };

@@ -83,7 +83,7 @@ Follow these steps to get Deep Research up and running on your local browser.
    # (Optional) Server-side Gemini API Key (Required for server API calls)
    GOOGLE_GENERATIVE_AI_API_KEY=
 
-   # (Optional) Server API Proxy URL
+   # (Optional) Server API Proxy URL. Default, `https://generativelanguage.googleapis.com`
    API_PROXY_BASE_URL=
 
    # (Optional) Server API Access Password for enhanced security

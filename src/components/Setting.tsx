@@ -1,6 +1,7 @@
 "use client";
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { RefreshCw } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -59,6 +60,7 @@ function convertModelName(name: string) {
 function Setting({ open, onClose }: SettingProps) {
   const { t } = useTranslation();
   const { modelList, refresh } = useModel();
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -84,9 +86,18 @@ function Setting({ open, onClose }: SettingProps) {
     onClose();
   }
 
+  async function fetchModelList() {
+    try {
+      setIsRefreshing(true);
+      await refresh();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }
+
   useLayoutEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (open) refresh();
+  }, [open, refresh]);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -182,20 +193,40 @@ function Setting({ open, onClose }: SettingProps) {
                     {t("setting.thinkingModel")}
                   </FormLabel>
                   <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="max-sm:max-h-72">
-                        {modelList.map((name) => {
-                          return (
-                            <SelectItem key={name} value={name}>
-                              {convertModelName(name)}
-                            </SelectItem>
-                          );
+                    <div className="col-span-3 flex gap-1">
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger
+                          className={cn({ hidden: modelList.length === 0 })}
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="max-sm:max-h-72">
+                          {modelList.map((name) => {
+                            return (
+                              <SelectItem key={name} value={name}>
+                                {convertModelName(name)}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        className={cn("w-full", {
+                          hidden: modelList.length > 0,
                         })}
-                      </SelectContent>
-                    </Select>
+                        type="button"
+                        variant="outline"
+                        onClick={() => fetchModelList()}
+                      >
+                        <RefreshCw
+                          className={isRefreshing ? "animate-spin" : ""}
+                        />{" "}
+                        {t("setting.refresh")}
+                      </Button>
+                    </div>
                   </FormControl>
                 </FormItem>
               )}
@@ -209,20 +240,40 @@ function Setting({ open, onClose }: SettingProps) {
                     {t("setting.networkingModel")}
                   </FormLabel>
                   <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="max-sm:max-h-72">
-                        {modelList.map((name) => {
-                          return (
-                            <SelectItem key={name} value={name}>
-                              {convertModelName(name)}
-                            </SelectItem>
-                          );
+                    <div className="col-span-3 flex gap-1">
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger
+                          className={cn({ hidden: modelList.length === 0 })}
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="max-sm:max-h-72">
+                          {modelList.map((name) => {
+                            return (
+                              <SelectItem key={name} value={name}>
+                                {convertModelName(name)}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        className={cn("w-full", {
+                          hidden: modelList.length > 0,
                         })}
-                      </SelectContent>
-                    </Select>
+                        type="button"
+                        variant="outline"
+                        onClick={() => fetchModelList()}
+                      >
+                        <RefreshCw
+                          className={isRefreshing ? "animate-spin" : ""}
+                        />{" "}
+                        {t("setting.refresh")}
+                      </Button>
+                    </div>
                   </FormControl>
                 </FormItem>
               )}
